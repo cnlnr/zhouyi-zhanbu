@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>六爻占卜</title>
+    <link rel="stylesheet" href="./style.css" />
+</head>
+
+<body>
+    <main class="container">
+        <header class="header">
+            <div>
+                <h1>六爻占卜</h1>
+            </div>
+            <!-- 清空数据链接 -->
+            <a href="javascript:void(0)" id="clear-btn" class="back-link">[清空数据]</a>
+        </header>
+
+        <form id="divination-form" action="result.html" method="GET" class="board">
+            <!-- 单行输入框：必须输入 (required) -->
+            <div style="display: flex; flex-direction: column; gap: 0.2rem;">
+                <input 
+                    type="text" 
+                    name="question" 
+                    id="question-input" 
+                    placeholder="*请输入所占问题（保持心静）" 
+                    autocomplete="off"
+                    required
+                    style="width: 100%; padding: 0.6rem; border: 1px solid #ccc; font-family: inherit; font-size: 0.8rem; border-radius: 2px; outline: none; box-sizing: border-box;margin-bottom: 0.4rem;"
+                />
+            </div>
+
+            <!-- 六爻排盘容器 -->
+            <div id="rows-container" class="board"></div>
+
+            <!-- 提交按钮 -->
+            <button type="submit" id="submit-btn" class="btn-main" disabled>排定此卦</button>
+        </form>
+    </main>
+
+    <script>
+        window.addEventListener('DOMContentLoaded', () => {
+            const STORAGE_KEY = 'zhouyi_persisted_yaos';
+            const STORAGE_Q_KEY = 'zhouyi_persisted_question';
+            const form = document.querySelector('#divination-form');
+            const submitBtn = document.querySelector('#submit-btn');
+            const clearBtn = document.querySelector('#clear-btn');
+            const questionInput = document.querySelector('#question-input');
+            const rowsContainer = document.querySelector('#rows-container');
+
+            if (!form || !rowsContainer) return;
+
+            const YAO_NAMES = ['初爻', '二爻', '三爻', '四爻', '五爻', '上爻'];
+            const OPTS = [
+                { state: '老阳', label: '老阳 ◯', tip: '3正·变', cls: 'opt-laoyang' },
+                { state: '少阳', label: '少阳 ⚊', tip: '1正2反', cls: 'opt-shaoyang' },
+                { state: '少阴', label: '少阴 ⚋', tip: '2正1反', cls: 'opt-shaoyin' },
+                { state: '老阴', label: '老阴 ✕', tip: '3反·变', cls: 'opt-laoyin' },
+            ];
+
+            // 1. 动态生成六行单选
+            if (rowsContainer.children.length === 0) {
+                let html = '';
+                for (let pos = 5; pos >= 0; pos--) {
+                    html += `
+          <div class="yao-row" data-pos="${pos}">
+            <span class="yao-name">${YAO_NAMES[pos]}</span>
+            <div class="yao-options">
+              ${OPTS.map(
+                        (opt) => `
+                <label class="btn-opt ${opt.cls}">
+                  <input type="radio" name="yao${pos}" value="${opt.state}" required />
+                  <span class="btn-name">${opt.label}</span>
+                  <span class="btn-tip">${opt.tip}</span>
+                </label>
+              `
+                    ).join('')}
+            </div>
+          </div>
+        `;
+                }
+                rowsContainer.innerHTML = html;
+            }
+
+            let currentSelections = {};
+
+            function saveToStorage() {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(currentSelections));
+            }
+
+            // 2. 状态与步进锁同步（增加对必填问题的联动判断）
+            function applyStateAndLock() {
+                for (let pos = 0; pos < 6; pos++) {
+                    const val = currentSelections[pos];
+                    const inputs = form.querySelectorAll(`input[name="yao${pos}"]`);
+                    inputs.forEach((input) => {
+                        input.checked = input.value === val;
+                    });
+                }
+
+                let nextEmpty = -1;
+                for (let i = 0; i < 6; i++) {
+                    if (!currentSelections[i]) {
+                        nextEmpty = i;
+                        break;
+                    }
+                }
+
+                for (let pos = 0; pos < 6; pos++) {
+                    const inputs = form.querySelectorAll(`input[name="yao${pos}"]`);
+                    const allowed = nextEmpty === -1 ? true : pos <= nextEmpty;
+                    inputs.forEach((input) => {
+                        input.disabled = !allowed;
+                    });
+                }
+
+                // 核心控制：6爻全满 且 问题不为空 时方可提交
+                const hasValidQuestion = questionInput && questionInput.value.trim().length > 0;
+                if (submitBtn) {
+                    submitBtn.disabled = nextEmpty !== -1 || !hasValidQuestion;
+                }
+            }
+
+            // 3. 问题输入实时监听：同步缓存 + 实时更新提交按钮状态
+            questionInput?.addEventListener('input', (e) => {
+                localStorage.setItem(STORAGE_Q_KEY, e.target.value);
+                applyStateAndLock();
+            });
+
+            // 4. 点击防误触确认
+            form.querySelectorAll('input[type="radio"]').forEach((radio) => {
+                radio.addEventListener('click', (e) => {
+                    const pos = radio.name.replace('yao', '');
+                    const prevVal = currentSelections[pos];
+                    const newVal = radio.value;
+
+                    if (prevVal && prevVal !== newVal) {
+                        const ok = window.confirm(
+                            `【${YAO_NAMES[pos]}】当前已选为“${prevVal}”。\n检测到再次点击，确定要修改为“${newVal}”吗？`
+                        );
+                        if (!ok) {
+                            e.preventDefault();
+                            return;
+                        }
+                    }
+
+                    currentSelections[pos] = newVal;
+                    saveToStorage();
+                    applyStateAndLock();
+                });
+            });
+
+            // 5. 清空数据
+            clearBtn?.addEventListener('click', (e) => {
+                e.preventDefault();
+                const hasData = Object.keys(currentSelections).length > 0 || (questionInput && questionInput.value.trim() !== '');
+                if (!hasData) return;
+
+                const confirmed = window.confirm('确定要清空当前所有已选爻位及问题并重新起卦吗？');
+                if (confirmed) {
+                    currentSelections = {};
+                    if (questionInput) questionInput.value = '';
+                    localStorage.removeItem(STORAGE_KEY);
+                    localStorage.removeItem(STORAGE_Q_KEY);
+                    applyStateAndLock();
+                }
+            });
+
+            // 6. 数据恢复
+            function restoreState() {
+                try {
+                    const saved = localStorage.getItem(STORAGE_KEY);
+                    currentSelections = saved ? JSON.parse(saved) : {};
+                } catch {
+                    currentSelections = {};
+                }
+
+                if (questionInput) {
+                    questionInput.value = localStorage.getItem(STORAGE_Q_KEY) || '';
+                }
+
+                applyStateAndLock();
+            }
+
+            window.addEventListener('pageshow', restoreState);
+            restoreState();
+        });
+    </script>
+</body>
+
+</html>

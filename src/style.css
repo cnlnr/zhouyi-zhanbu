@@ -1,0 +1,48 @@
+/* style.css */
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+body {
+  font-family: ui-monospace, monospace;
+  background: #fff; color: #000;
+  display: flex; justify-content: center;
+  padding: 1.5rem 0.75rem;
+}
+.container { width: 100%; max-width: 480px; display: flex; flex-direction: column; gap: 0.8rem; }
+.header { border-bottom: 2px solid #000; padding-bottom: 0.4rem; display: flex; justify-content: space-between; align-items: baseline; }
+.header h1 { font-size: 1.2rem; }
+.header span, .back-link { font-size: 0.75rem; color: #666; text-decoration: none; }
+.back-link:hover { text-decoration: underline; color: #000; }
+
+.board { display: flex; flex-direction: column; gap: 0.4rem; }
+.yao-row { display: flex; align-items: center; gap: 0.4rem; width: 100%; }
+.yao-name { width: 42px; flex-shrink: 0; font-size: 0.85rem; font-weight: 700; white-space: nowrap; }
+.yao-options { flex: 1; display: flex; gap: 0.25rem; min-width: 0; }
+
+.btn-opt {
+  flex: 1; min-width: 0; padding: 0.4rem 0.1rem;
+  background: transparent; border: 1px solid #ccc; color: #000;
+  cursor: pointer; display: flex; flex-direction: column; align-items: center;
+  font-family: inherit; border-radius: 2px; white-space: nowrap;
+}
+.btn-opt input[type="radio"] { display: none; }
+.btn-name { font-size: 0.75rem; font-weight: 700; white-space: nowrap; }
+.btn-tip { font-size: 0.6rem; color: #666; margin-top: 1px; white-space: nowrap; }
+
+/* 纯 CSS 选中色阶 */
+.btn-opt.opt-laoyang:has(input:checked)  { background: #fff; border: 2px solid #000; color: #000; }
+.btn-opt.opt-shaoyang:has(input:checked) { background: #ddd; border: 2px solid #000; color: #000; }
+.btn-opt.opt-shaoyin:has(input:checked)  { background: #444; border: 2px solid #000; color: #fff; }
+.btn-opt.opt-shaoyin:has(input:checked) .btn-tip { color: #ccc; }
+.btn-opt.opt-laoyin:has(input:checked)   { background: #000; border: 2px solid #000; color: #fff; }
+.btn-opt.opt-laoyin:has(input:checked) .btn-tip { color: #aaa; }
+
+.btn-main {
+  width: 100%; padding: 0.75rem; background: #000; color: #fff;
+  border: 1px solid #000; font-size: 0.9rem; font-weight: 700;
+  font-family: inherit; cursor: pointer; border-radius: 2px; margin-top: 0.3rem;
+}
+.result-head { display: flex; justify-content: space-between; font-size: 0.75rem; color: #666; margin-bottom: 0.3rem; }
+.btn-copy { background: none; border: none; font-family: inherit; font-size: 0.75rem; font-weight: 700; cursor: pointer; }
+#output-text {
+  background: #f8f8f8; border: 1px solid #ddd; padding: 0.75rem;
+  font-size: 0.8rem; line-height: 1.5; white-space: pre-wrap; word-break: break-all;
+}
